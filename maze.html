@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>皮克敏地下迷宮</title>
+    <style>
+        :root {
+            --bg-dark: #3e2723;
+            --path-light: #d7ccc8;
+            --pikmin-glow: #ffeb3b;
+        }
+        body {
+            margin: 0; background: var(--bg-dark); color: white;
+            font-family: "Varela Round", sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; touch-action: none;
+        }
+        header { width:100%; padding:10px; display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.3); }
+        .btn {
+            background: #fff; color: #333; padding: 5px 15px; border-radius: 20px; text-decoration: none; font-weight: bold;
+        }
+        
+        #game-container {
+            position: relative; margin-top: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 4px solid #8d6e63;
+        }
+        
+        /* 虛擬十字鍵 */
+        .controls {
+            margin-top: auto; margin-bottom: 20px;
+            display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px;
+            gap: 5px;
+        }
+        .d-btn {
+            width: 60px; height: 60px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; border: 2px solid rgba(255,255,255,0.4);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; cursor: pointer; user-select: none;
+        }
+        .d-btn:active { background: rgba(255,255,255,0.5); }
+        .d-up { grid-column: 2; grid-row: 1; }
+        .d-left { grid-column: 1; grid-row: 2; }
+        .d-down { grid-column: 2; grid-row: 2; }
+        .d-right { grid-column: 3; grid-row: 2; }
+
+        .win-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95); color: #333; padding: 20px;
+            border-radius: 15px; text-align: center; display: none; z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="btn">◀ 基地</a>
+        <span style="font-size:1.2rem;">地下迷宮 Lv. <span id="lvl">1</span></span>
+        <button class="btn" onclick="initMaze()">重置</button>
+    </header>
+
+    <div id="game-container">
+        <canvas id="mazeCanvas"></canvas>
+        <div class="win-msg" id="winMsg">
+            <h2>🚀 抵達出口!</h2>
+            <button class="btn" style="background: #ff4d4d; color:white; padding:10px 30px;" onclick="nextLevel()">下一層</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="d-btn d-up" ontouchstart="move(0, -1)" onmousedown="move(0, -1)">⬆️</div>
+        <div class="d-btn d-left" ontouchstart="move(-1, 0)" onmousedown="move(-1, 0)">⬅️</div>
+        <div class="d-btn d-down" ontouchstart="move(0, 1)" onmousedown="move(0, 1)">⬇️</div>
+        <div class="d-btn d-right" ontouchstart="move(1, 0)" onmousedown="move(1, 0)">➡️</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        let level = 1;
+        let cols, rows;
+        let cellSize;
+        let grid = [];
+        let player = {x:0, y:0};
+        let goal = {x:0, y:0};
+        let stack = [];
+
+        // 初始化
+        window.onload = initMaze;
+
+        function initMaze() {
+            document.getElementById('winMsg').style.display = 'none';
+            document.getElementById('lvl').innerText = level;
+            
+            // 根據等級增加難度
+            const baseSize = 10;
+            cols = baseSize + Math.floor(level/2);
+            rows = baseSize + Math.floor(level/2);
+            
+            // 計算 Canvas 大小 (RWD)
+            const maxWidth = window.innerWidth - 30;
+            const maxHeight = window.innerHeight * 0.55;
+            cellSize = Math.floor(Math.min(maxWidth / cols, maxHeight / rows));
+            
+            canvas.width = cols * cellSize;
+            canvas.height = rows * cellSize;
+
+            // 迷宮演算法 (DFS)
+            grid = [];
+            for(let y=0; y<rows; y++) {
+                let row = [];
+                for(let x=0; x<cols; x++) {
+                    row.push({x, y, walls:[true, true, true, true], visited: false});
+                }
+                grid.push(row);
+            }
+
+            // 生成迷宮
+            let current = grid[0][0];
+            current.visited = true;
+            stack = []; // reset stack
+            
+            // 簡單的遞迴回溯生成
+            do {
+                let next = getUnvisitedNeighbor(current);
+                if (next) {
+                    next.visited = true;
+                    stack.push(current);
+                    removeWalls(current, next);
+                    current = next;
+                } else if (stack.length > 0) {
+                    current = stack.pop();
+                }
+            } while (stack.length > 0);
+
+            // 設定起點終點
+            player = {x:0, y:0};
+            goal = {x: cols-1, y: rows-1};
+
+            draw();
+        }
+
+        function getUnvisitedNeighbor(cell) {
+            let neighbors = [];
+            let {x, y} = cell;
+            if(y > 0 && !grid[y-1][x].visited) neighbors.push(grid[y-1][x]);
+            if(x < cols-1 && !grid[y][x+1].visited) neighbors.push(grid[y][x+1]);
+            if(y < rows-1 && !grid[y+1][x].visited) neighbors.push(grid[y+1][x]);
+            if(x > 0 && !grid[y][x-1].visited) neighbors.push(grid[y][x-1]);
+            
+            if(neighbors.length > 0) return neighbors[Math.floor(Math.random() * neighbors.length)];
+            return undefined;
+        }
+
+        function removeWalls(a, b) {
+            let x = a.x - b.x;
+            if(x === 1) { a.walls[3] = false; b.walls[1] = false; }
+            else if(x === -1) { a.walls[1] = false; b.walls[3] = false; }
+            
+            let y = a.y - b.y;
+            if(y === 1) { a.walls[0] = false; b.walls[2] = false; }
+            else if(y === -1) { a.walls[2] = false; b.walls[0] = false; }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#3e2723';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    let cell = grid[y][x];
+                    let cx = x * cellSize;
+                    let cy = y * cellSize;
+                    
+                    ctx.fillStyle = '#d7ccc8'; // 地板色
+                    ctx.fillRect(cx, cy, cellSize, cellSize);
+
+                    ctx.strokeStyle = '#5d4037'; // 牆壁色
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    if(cell.walls[0]) { ctx.moveTo(cx, cy); ctx.lineTo(cx+cellSize, cy); } // Top
+                    if(cell.walls[1]) { ctx.moveTo(cx+cellSize, cy); ctx.lineTo(cx+cellSize, cy+cellSize); } // Right
+                    if(cell.walls[2]) { ctx.moveTo(cx+cellSize, cy+cellSize); ctx.lineTo(cx, cy+cellSize); } // Bottom
+                    if(cell.walls[3]) { ctx.moveTo(cx, cy+cellSize); ctx.lineTo(cx, cy); } // Left
+                    ctx.stroke();
+                }
+            }
+
+            // 畫玩家 (皮克敏)
+            ctx.font = `${cellSize*0.7}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🌱', player.x*cellSize + cellSize/2, player.y*cellSize + cellSize/2);
+
+            // 畫終點 (火箭)
+            ctx.fillText('🚀', goal.x*cellSize + cellSize/2, goal.y*cellSize + cellSize/2);
+        }
+
+        function move(dx, dy) {
+            let currentCell = grid[player.y][player.x];
+            let canMove = false;
+
+            if(dx === 0 && dy === -1 && !currentCell.walls[0]) canMove = true;
+            if(dx === 1 && dy === 0 && !currentCell.walls[1]) canMove = true;
+            if(dx === 0 && dy === 1 && !currentCell.walls[2]) canMove = true;
+            if(dx === -1 && dy === 0 && !currentCell.walls[3]) canMove = true;
+
+            if(canMove) {
+                player.x += dx;
+                player.y += dy;
+                draw();
+                checkWin();
+            }
+        }
+
+        function checkWin() {
+            if(player.x === goal.x && player.y === goal.y) {
+                document.getElementById('winMsg').style.display = 'block';
+            }
+        }
+
+        function nextLevel() {
+            level++;
+            initMaze();
+        }
+        
+        // 鍵盤支援 (電腦版)
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowUp') move(0, -1);
+            if(e.key === 'ArrowRight') move(1, 0);
+            if(e.key === 'ArrowDown') move(0, 1);
+            if(e.key === 'ArrowLeft') move(-1, 0);
+        });
+    </script>
+</body>
+</html>
