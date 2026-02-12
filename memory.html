@@ -9,142 +9,130 @@
             --bg-grass: #e8f5e9;
             --soil-dark: #3e2723;
             --card-back: #4caf50;
+            --pikmin-yellow: #ffd700;
         }
         body {
-            margin: 0;
-            font-family: "Varela Round", sans-serif;
+            margin: 0; font-family: "Varela Round", sans-serif;
             background-color: var(--bg-grass);
             background-image: radial-gradient(#c8e6c9 20%, transparent 20%);
             background-size: 30px 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            user-select: none;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
         }
-        header {
-            margin: 15px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
+        header { margin: 10px; display: flex; gap: 10px; align-items: center; z-index: 10;}
         .home-btn {
-            text-decoration: none;
-            background: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            color: var(--soil-dark);
-            box-shadow: 0 4px 0 #bbb;
-            border: 2px solid var(--soil-dark);
+            text-decoration: none; background: white; padding: 8px 15px; border-radius: 20px;
+            font-weight: bold; color: var(--soil-dark); border: 2px solid var(--soil-dark);
         }
-        .game-board {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            width: 90%;
-            max-width: 400px;
-            aspect-ratio: 1;
+        
+        /* 難度選單 */
+        .difficulty-menu {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.95); z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .card {
-            background: white;
-            border-radius: 12px;
-            cursor: pointer;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.5s;
-            box-shadow: 0 5px 0 rgba(0,0,0,0.1);
-            border: 2px solid var(--soil-dark);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.2rem;
+        .diff-btn {
+            margin: 10px; padding: 15px 40px; font-size: 1.5rem; border-radius: 30px;
+            border: none; background: var(--pikmin-yellow); color: var(--soil-dark);
+            font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #fbc02d;
         }
-        .card.flipped {
-            transform: rotateY(180deg);
-            border-color: #ffd700;
-        }
-        .card-front, .card-back {
-            position: absolute;
-            backface-visibility: hidden;
-            width: 100%; height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-        }
-        .card-front { transform: rotateY(180deg); background: white; }
-        .card-back { 
-            background: var(--soil-dark);
-            color: var(--leaf-green);
-        }
-        .seedling { font-size: 2rem; color: #76c442; }
+        .diff-btn:active { transform: translateY(5px); box-shadow: none; }
 
-        /* 勝利畫面 */
-        .win-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            display: none;
+        .game-board {
+            display: grid; gap: 5px; width: 95%; max-width: 500px;
+            aspect-ratio: 1; /* 正方形 */
+            margin-top: 10px;
         }
-        .win-btn {
-            background: #ff4d4d;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.5rem;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 6px 0 #cc0000;
+        
+        .card {
+            background: white; border-radius: 8px; cursor: pointer; position: relative;
+            transform-style: preserve-3d; transition: transform 0.4s;
+            border: 2px solid var(--soil-dark); display: flex; justify-content: center; align-items: center;
+        }
+        .card.flipped { transform: rotateY(180deg); border-color: #ffd700; }
+        .card-front, .card-back {
+            position: absolute; backface-visibility: hidden; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; border-radius: 6px;
+        }
+        .card-front { transform: rotateY(180deg); background: white; font-size: 1.5rem; }
+        .card-back { background: var(--soil-dark); font-size: 1.2rem; }
+        
+        /* 動態調整字體大小 */
+        .grid-4 .card-front { font-size: 2.5rem; }
+        .grid-6 .card-front { font-size: 1.8rem; }
+        .grid-8 .card-front { font-size: 1.2rem; }
+
+        .win-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); display: none;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
     </style>
 </head>
 <body>
-
     <header>
         <a href="index.html" class="home-btn">◀ 基地</a>
-        <h2 style="color:var(--soil-dark); margin:0;">尋找夥伴</h2>
+        <button class="home-btn" onclick="showMenu()">重選難度</button>
     </header>
+
+    <div class="difficulty-menu" id="menu">
+        <h1>🌱 選擇地圖大小</h1>
+        <button class="diff-btn" onclick="startGame(4)">4 x 4 (簡單)</button>
+        <button class="diff-btn" onclick="startGame(6)">6 x 6 (中等)</button>
+        <button class="diff-btn" onclick="startGame(8)">8 x 8 (困難)</button>
+    </div>
 
     <div class="game-board" id="board"></div>
 
     <div class="win-modal" id="winModal">
-        <h1 style="font-size:3rem; margin:0;">🌸 繁花盛開!</h1>
-        <p style="font-size:1.5rem; color:#5d4037;">夥伴都找齊了！</p>
-        <button class="win-btn" onclick="initGame()">再次探索</button>
+        <h1 style="font-size:3rem; margin:0;">🎉 尋找成功!</h1>
+        <button class="diff-btn" onclick="showMenu()">下一關</button>
     </div>
 
     <script>
-        // 代表不同種類的皮克敏 (紅, 藍, 黃, 岩, 紫, 白, 冰, 羽)
-        const pikmins = ['🔴', '🔵', '🟡', '🪨', '🟣', '⚪', '🧊', '🦋'];
+        // 大量擴充的 Emoji 庫 (超過 40 種以支援 8x8=64 格 -> 32 對)
+        const allEmojis = [
+            '🔴','🔵','🟡','🪨','🟣','⚪','🧊','🦋', 
+            '🍄','🌸','🌷','🌻','🍀','🍁','🍎','🍊',
+            '🐞','🐝','🐛','🐜','🐌','🐢','🦎','🐸',
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼',
+            '⭐','🌙','☀️','⚡','💧','🔥','🪐','🚀'
+        ];
+        
         let flippedCards = [];
         let matchedPairs = 0;
         let isLocked = false;
+        let totalPairs = 0;
 
-        function initGame() {
+        function showMenu() {
+            document.getElementById('menu').style.display = 'flex';
+            document.getElementById('winModal').style.display = 'none';
+        }
+
+        function startGame(size) {
+            document.getElementById('menu').style.display = 'none';
             const board = document.getElementById('board');
-            const winModal = document.getElementById('winModal');
             board.innerHTML = '';
-            winModal.style.display = 'none';
+            
+            // 設定 CSS Grid
+            board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            board.className = `game-board grid-${size}`;
+
             matchedPairs = 0;
+            totalPairs = (size * size) / 2;
             flippedCards = [];
             isLocked = false;
 
-            const gameItems = [...pikmins, ...pikmins];
+            // 選取需要的 emoji 數量
+            let selectedEmojis = allEmojis.slice(0, totalPairs);
+            let gameItems = [...selectedEmojis, ...selectedEmojis];
             gameItems.sort(() => Math.random() - 0.5);
 
             gameItems.forEach(item => {
                 const card = document.createElement('div');
                 card.classList.add('card');
                 card.innerHTML = `
-                    <div class="card-back"><span class="seedling">🌱</span></div>
+                    <div class="card-back">🌱</div>
                     <div class="card-front">${item}</div>
                 `;
                 card.addEventListener('click', () => flipCard(card, item));
@@ -157,7 +145,7 @@
 
             card.classList.add('flipped');
             flippedCards.push({ card, item });
-            playPluckSound(); // 拔出皮克敏的聲音
+            playTone(600);
 
             if (flippedCards.length === 2) checkMatch();
         }
@@ -170,13 +158,12 @@
                 flippedCards = [];
                 isLocked = false;
                 matchedPairs++;
-                setTimeout(playHappySound, 200);
+                setTimeout(() => playTone(880), 200);
 
-                if (matchedPairs === pikmins.length) {
+                if (matchedPairs === totalPairs) {
                     setTimeout(() => {
                         document.getElementById('winModal').style.display = 'flex';
-                        playWinMusic();
-                    }, 600);
+                    }, 500);
                 }
             } else {
                 setTimeout(() => {
@@ -188,52 +175,18 @@
             }
         }
 
-        // --- 簡易音效 ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playPluckSound() {
+        function playTone(freq) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            osc.stop(audioCtx.currentTime + 0.1);
-        }
-
-        function playHappySound() {
-            // 短促的快樂音
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            osc.frequency.value = freq;
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
             osc.stop(audioCtx.currentTime + 0.2);
         }
-        
-        function playWinMusic() {
-            // 簡單的三和弦 Arpeggio
-            [523, 659, 784, 1046].forEach((freq, i) => {
-                setTimeout(() => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.frequency.value = freq;
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-                    osc.stop(audioCtx.currentTime + 0.4);
-                }, i * 150);
-            });
-        }
-
-        initGame();
     </script>
 </body>
 </html>
