@@ -2,241 +2,123 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>皮克敏數字填空</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>數字填空</title>
     <style>
-        :root { --bg: #f1f8e9; --brown: #5d4037; --green: #76c442; --hole: #3e2723; }
-        body { margin: 0; background: var(--bg); font-family: "Varela Round", sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; touch-action: none;}
-        header { padding: 10px; display: flex; justify-content: space-between; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
-        .btn { text-decoration: none; background: var(--green); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 1rem;}
-        select { font-size: 1rem; padding: 5px; border-radius: 10px; border: 2px solid var(--green); color: var(--brown); font-weight: bold; background: white;}
-
-        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; width: 100%;}
+        body { margin: 0; font-family: "Varela Round", sans-serif; background: #f1f8e9; display: flex; flex-direction: column; height: 100vh; overflow: hidden; touch-action: none; }
+        header { padding: 10px; background: white; display: flex; gap: 10px; z-index: 10; }
+        .btn { padding: 5px 15px; background: #76c442; color: white; border-radius: 15px; text-decoration: none; border:none; font-size:1rem;}
+        select { font-size: 1rem; }
         
-        /* 題目區 (橋樑) */
-        .bridge-container { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; width: 95%; max-width: 600px; padding: 20px; background: rgba(255,255,255,0.5); border-radius: 20px; }
-        .slot {
-            width: 50px; height: 50px; background: #fff; border: 3px solid var(--brown); border-radius: 10px;
-            display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--brown); font-weight: bold;
-            position: relative;
-        }
-        .slot.empty { background: #d7ccc8; border-style: dashed; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2); }
-        .slot.filled { background: #c8e6c9; border: 3px solid var(--green); animation: pop 0.3s; }
-
-        /* 選項區 (拖曳物) */
-        .options-container {
-            margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; height: 80px; width: 100%;
-        }
-        .draggable {
-            width: 60px; height: 60px; background: #ffeb3b; border-radius: 50%; border: 3px solid #fbc02d;
-            display: flex; justify-content: center; align-items: center; font-size: 1.8rem; color: var(--brown); font-weight: bold;
-            cursor: grab; touch-action: none; position: relative; box-shadow: 0 4px 0 #f9a825; z-index: 100;
-        }
-        .draggable:active { transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 200; }
+        #board { flex: 1; display: flex; flex-wrap: wrap; gap: 5px; padding: 20px; align-content: flex-start; justify-content: center; overflow-y: auto;}
+        .cell { width: 50px; height: 50px; border: 2px solid #5d4037; background: white; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; border-radius: 8px; }
+        .empty { background: #d7ccc8; border-style: dashed; }
+        .filled { background: #c8e6c9; color: #33691e; }
         
-        @keyframes pop { 0% {transform: scale(0.5);} 80% {transform: scale(1.1);} 100% {transform: scale(1);} }
-        .win-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; }
+        #drags { height: 100px; background: #e8f5e9; border-top: 2px solid #ccc; display: flex; align-items: center; gap: 10px; overflow-x: auto; padding: 0 10px; }
+        .drag-item { width: 60px; height: 60px; background: #ffeb3b; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; flex-shrink: 0; box-shadow: 2px 2px 0 #fbc02d; }
     </style>
 </head>
 <body>
     <header>
-        <a href="index.html" class="btn">◀ 基地</a>
-        <select id="levelSelect" onchange="initGame()">
-            <option value="0">1 - 10</option>
-            <option value="1">11 - 20</option>
-            <option value="2">21 - 30</option>
-            <option value="3">31 - 40</option>
-            <option value="4">41 - 50</option>
-            <option value="5">51 - 60</option>
-            <option value="6">61 - 70</option>
-            <option value="7">71 - 80</option>
-            <option value="8">81 - 90</option>
-            <option value="9">91 - 100</option>
+        <a href="index.html" class="btn">◀</a>
+        <select id="rangeSel" onchange="init()">
+            <option value="0">1-50</option>
+            <option value="50">51-100</option>
         </select>
+        <button class="btn" onclick="init()">新題目</button>
     </header>
 
-    <div id="game-area">
-        <div class="bridge-container" id="bridge"></div>
-        <div class="options-container" id="options"></div>
-    </div>
-
-    <div class="win-modal" id="winModal">
-        <h1>🎉 修復完成！</h1>
-        <button class="btn" onclick="nextLevel()" style="font-size:1.5rem; padding:10px 30px;">下一關</button>
-    </div>
+    <div id="board"></div>
+    <div id="drags"></div>
 
     <script>
-        let currentLevel = 0;
-        let missingNumbers = [];
-        
-        window.onload = initGame;
+        window.onload = init;
+        let dragging = null;
 
-        function initGame() {
-            const select = document.getElementById('levelSelect');
-            currentLevel = parseInt(select.value);
-            missingNumbers = [];
-            document.getElementById('winModal').style.display = 'none';
+        function init() {
+            const start = parseInt(document.getElementById('rangeSel').value) + 1;
+            const board = document.getElementById('board');
+            const drags = document.getElementById('drags');
+            board.innerHTML = ''; drags.innerHTML = '';
 
-            const startNum = currentLevel * 10 + 1;
-            const endNum = startNum + 9;
-            const bridge = document.getElementById('bridge');
-            const options = document.getElementById('options');
-            
-            bridge.innerHTML = '';
-            options.innerHTML = '';
+            // 產生 50 個數字
+            let nums = [];
+            for(let i=0; i<50; i++) nums.push(start + i);
 
-            // 隨機挖 3-5 個洞
-            let sequence = [];
-            for(let i=startNum; i<=endNum; i++) sequence.push(i);
-            
-            // 隨機選幾個數字挖空
-            let holes = 0;
-            let maxHoles = 4; // 挖空數量
-            
-            sequence.forEach(num => {
-                const slot = document.createElement('div');
-                slot.classList.add('slot');
-                
-                // 決定是否挖空 (機率 40%)
-                if(Math.random() < 0.45 && holes < maxHoles) {
-                    slot.classList.add('empty');
-                    slot.dataset.target = num;
-                    slot.innerText = '?';
-                    missingNumbers.push(num);
-                    holes++;
-                } else {
-                    slot.innerText = num;
-                }
-                bridge.appendChild(slot);
-            });
-
-            // 如果運氣好都沒挖到，強制挖幾個
-            if(missingNumbers.length === 0) {
-                 // 簡單重整
-                 initGame();
-                 return;
+            // 隨機決定挖空數量 (3-10)
+            let holeCount = Math.floor(Math.random() * 8) + 3;
+            let holes = [];
+            while(holes.length < holeCount) {
+                let idx = Math.floor(Math.random() * 50);
+                if(!holes.includes(idx)) holes.push(idx);
             }
 
-            // 生成拖曳選項 (打亂)
-            missingNumbers.sort(() => Math.random() - 0.5);
-            missingNumbers.forEach(num => {
-                const drag = document.createElement('div');
-                drag.classList.add('draggable');
-                drag.innerText = num;
-                drag.dataset.val = num;
-                
-                // 加入觸控/滑鼠事件
-                addDragEvents(drag);
-                options.appendChild(drag);
+            // 建立格子
+            nums.forEach((n, i) => {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                if(holes.includes(i)) {
+                    div.className += ' empty';
+                    div.dataset.ans = n;
+                    // 建立對應的拖曳物
+                    createDrag(n);
+                } else {
+                    div.innerText = n;
+                }
+                board.appendChild(div);
             });
+            
+            // 打亂拖曳物
+            shuffleDrags();
         }
 
-        // --- 拖曳邏輯 (支援手機 Touch) ---
-        function addDragEvents(el) {
-            let startX, startY, initialLeft, initialTop;
+        function createDrag(n) {
+            const d = document.createElement('div');
+            d.className = 'drag-item';
+            d.innerText = n;
+            d.dataset.val = n;
             
-            const start = (e) => {
-                // e.preventDefault(); // 避免捲動 (視情況開啟)
-                const touch = e.type === 'touchstart' ? e.touches[0] : e;
-                const rect = el.getBoundingClientRect();
-                
-                // 設定絕對定位以便移動
-                el.style.position = 'fixed'; // 使用 fixed 防止被容器裁切
-                el.style.left = rect.left + 'px';
-                el.style.top = rect.top + 'px';
-                el.style.zIndex = 1000;
-                
-                startX = touch.clientX;
-                startY = touch.clientY;
-                initialLeft = rect.left;
-                initialTop = rect.top;
-                
-                playPop();
-            };
-
-            const move = (e) => {
-                if (el.style.position !== 'fixed') return;
+            // 觸控邏輯
+            d.addEventListener('touchstart', e => {
                 e.preventDefault();
-                const touch = e.type === 'touchmove' ? e.touches[0] : e;
-                const dx = touch.clientX - startX;
-                const dy = touch.clientY - startY;
-                el.style.left = (initialLeft + dx) + 'px';
-                el.style.top = (initialTop + dy) + 'px';
-            };
-
-            const end = (e) => {
-                if (el.style.position !== 'fixed') return;
-                const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
+                dragging = d;
+                d.style.position = 'fixed';
+                d.style.zIndex = 100;
+                moveDrag(e.touches[0]);
+            });
+            d.addEventListener('touchmove', e => {
+                if(dragging) moveDrag(e.touches[0]);
+            });
+            d.addEventListener('touchend', e => {
+                const touch = e.changedTouches[0];
+                d.style.display = 'none'; // 隱藏以偵測下方元素
+                const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+                d.style.display = 'flex';
                 
-                // 檢查是否對準目標
-                // 隱藏自己一下，不然 elementFromPoint 會抓到自己
-                el.style.display = 'none';
-                let target = document.elementFromPoint(touch.clientX, touch.clientY);
-                el.style.display = 'flex';
-
-                if (target && target.classList.contains('empty') && !target.classList.contains('filled')) {
-                    if (parseInt(target.dataset.target) === parseInt(el.dataset.val)) {
-                        // 答對！
-                        target.innerText = el.dataset.val;
-                        target.classList.remove('empty');
-                        target.classList.add('filled');
-                        playCorrect();
-                        el.remove(); // 移除選項
-                        checkWin();
-                        return;
-                    } else {
-                        playWrong();
+                if(elem && elem.classList.contains('empty') && !elem.innerText) {
+                    if(parseInt(elem.dataset.ans) === parseInt(d.innerText)) {
+                        elem.innerText = d.innerText;
+                        elem.className = 'cell filled';
+                        d.remove();
                     }
                 }
-
-                // 沒對準或答錯，彈回去
-                el.style.position = 'static';
-                el.style.zIndex = 100;
-                el.style.left = 'auto';
-                el.style.top = 'auto';
-            };
-
-            el.addEventListener('mousedown', start);
-            el.addEventListener('touchstart', start, {passive: false});
-            
-            document.addEventListener('mousemove', move);
-            document.addEventListener('touchmove', move, {passive: false});
-            
-            el.addEventListener('mouseup', end);
-            el.addEventListener('touchend', end);
+                d.style.position = 'static';
+                dragging = null;
+            });
+            document.getElementById('drags').appendChild(d);
         }
 
-        function checkWin() {
-            const remaining = document.querySelectorAll('.draggable');
-            if(remaining.length === 0) {
-                setTimeout(() => {
-                    document.getElementById('winModal').style.display = 'flex';
-                    playWin();
-                }, 500);
+        function moveDrag(t) {
+            dragging.style.left = (t.clientX - 30) + 'px';
+            dragging.style.top = (t.clientY - 30) + 'px';
+        }
+
+        function shuffleDrags() {
+            const d = document.getElementById('drags');
+            for (let i = d.children.length; i >= 0; i--) {
+                d.appendChild(d.children[Math.random() * i | 0]);
             }
-        }
-
-        function nextLevel() {
-            const select = document.getElementById('levelSelect');
-            if(select.selectedIndex < 9) select.selectedIndex++;
-            initGame();
-        }
-
-        // --- 音效 ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playTone(freq, type='sine', dur=0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = type; osc.frequency.value = freq;
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur); osc.stop(audioCtx.currentTime + dur);
-        }
-        function playPop() { playTone(400, 'triangle', 0.05); }
-        function playCorrect() { playTone(800, 'sine', 0.1); setTimeout(()=>playTone(1200, 'sine', 0.2), 100); }
-        function playWrong() { playTone(150, 'sawtooth', 0.3); }
-        function playWin() { 
-            [523, 659, 784, 1046].forEach((f, i) => setTimeout(()=>playTone(f, 'square', 0.2), i*150)); 
         }
     </script>
 </body>
