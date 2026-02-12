@@ -3,352 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>皮克敏搬運算數</title>
+    <title>乘法除法挑戰</title>
     <style>
-        :root {
-            --pikmin-red: #ff4d4d;
-            --pikmin-blue: #4da6ff;
-            --pikmin-yellow: #ffd700;
-            --leaf-green: #76c442;
-            --soil-brown: #5d4037;
-            --onion-bg: #fff; 
-        }
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body {
-            margin: 0; padding: 0;
-            font-family: "Varela Round", sans-serif;
-            color: var(--soil-brown);
-            background-color: #e8f5e9;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-        }
-        header {
-            background: var(--leaf-green); padding: 10px 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .home-btn {
-            text-decoration: none; background: rgba(255,255,255,0.2);
-            padding: 5px 12px; border-radius: 20px; color: white; font-weight: bold;
-        }
-        h1 { margin: 0; color: white; font-size: 1.2rem; }
-        .mute-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        body { margin: 0; font-family: "Varela Round", sans-serif; background: #e0f7fa; height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 10px; background: #00bcd4; display: flex; justify-content: space-between; }
+        .btn { border: none; background: white; color: #00bcd4; padding: 5px 15px; border-radius: 15px; font-weight: bold; cursor: pointer; text-decoration: none;}
+        .active { background: #008ba3; color: white; }
         
-        .app-container {
-            flex: 1; display: flex; flex-direction: column; padding: 15px;
-            max-width: 500px; margin: 0 auto; width: 100%;
-        }
+        #content { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
-        /* 設定區塊 */
-        .controls { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;}
-        select {
-            padding: 8px; border-radius: 15px; border: 2px solid var(--pikmin-red);
-            font-weight: bold; color: var(--soil-brown); background: white; outline: none; text-align: center;
-        }
-        #opSelect { flex: 0.8; border-color: var(--pikmin-yellow); }
-        #levelSelect { flex: 1.2; }
+        /* 背誦表格 */
+        .table-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; width: 100%; max-width: 800px; }
+        .table-card { background: white; padding: 10px; border-radius: 10px; border: 2px solid #b2ebf2; }
+        .row { font-size: 0.9rem; color: #333; margin: 2px 0; border-bottom: 1px dashed #eee; }
         
-        .mode-switch {
-            width: 100%; display: flex; background: #ddd; border-radius: 15px; padding: 2px; margin-top: 5px;
-        }
-        .mode-btn {
-            flex: 1; border: none; background: transparent; padding: 8px 0;
-            border-radius: 12px; font-weight: bold; color: #666; cursor: pointer;
-        }
-        .mode-btn.active { background: white; color: var(--pikmin-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* 測驗區 */
+        .quiz-container { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; }
+        .q-text { font-size: 3.5rem; font-weight: bold; margin-bottom: 20px; color: #006064; }
+        .input-area { display: flex; gap: 10px; }
+        #ansInput { font-size: 2rem; width: 100px; text-align: center; border: 3px solid #00bcd4; border-radius: 10px; }
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        .key { width: 70px; height: 70px; background: white; border-radius: 50%; border: 2px solid #ddd; font-size: 1.5rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 0 #ccc; }
+        .key:active { transform: translateY(4px); box-shadow: none; }
 
-        /* 顯示區 */
-        .display-card {
-            background: var(--onion-bg); flex: 1; max-height: 250px; border-radius: 30px;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
-            border: 4px solid var(--pikmin-red);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative; margin-bottom: 10px; box-shadow: 0 8px 0 rgba(0,0,0,0.1);
-        }
-        .expression {
-            font-size: 3rem; font-weight: 800; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center;
-        }
-        .num-pellet {
-            background: var(--pikmin-red); color: white; width: 60px; height: 60px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; box-shadow: inset -3px -3px 0 rgba(0,0,0,0.2); margin: 0 5px;
-        }
-        .op { color: #888; font-size: 1.5rem; }
-        .input-box {
-            min-width: 80px; height: 70px; border: 3px dashed var(--soil-brown); border-radius: 15px;
-            display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
-            color: var(--soil-brown); background: #fcfcfc;
-        }
-        .input-box.correct { border-color: var(--leaf-green); color: var(--leaf-green); background: #e8f5e9; }
-        .input-box.wrong { border-color: var(--pikmin-red); animation: shake 0.4s; }
-
-        .recite-nav { display: none; width: 100%; justify-content: space-between; padding: 0 30px; margin-top: 15px; }
-        .nav-btn {
-            background: var(--pikmin-blue); color: white; border: none; width: 50px; height: 50px;
-            border-radius: 50%; font-size: 1.5rem; box-shadow: 0 4px 0 #205ebb;
-        }
-        .nav-btn:active { transform: translateY(4px); box-shadow: none; }
-
-        /* 鍵盤 */
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 10px; }
-        .key {
-            background: white; border: 2px solid #ddd; border-radius: 15px; height: 55px;
-            font-size: 1.5rem; font-weight: bold; color: var(--soil-brown); box-shadow: 0 4px 0 #ccc;
-        }
-        .key:active { transform: translateY(4px); box-shadow: none; background: #eee; }
-        .key-c { background: #ffcccc; border-color: #ff9999; color: #d32f2f; }
-        .key-ok { background: var(--pikmin-yellow); border-color: #fbc02d; }
-        
-        .hidden { display: none !important; }
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; flex-direction: column; color: white; z-index: 200; }
+        .modal h1 { font-size: 3rem; margin: 0; color: #ffeb3b; text-shadow: 2px 2px 0 #000; }
+        .modal button { margin-top: 20px; padding: 10px 30px; font-size: 1.5rem; background: #00bcd4; border: none; border-radius: 30px; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
     <header>
-        <a href="index.html" class="home-btn">◀ 基地</a>
-        <h1>搬運算數</h1>
-        <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔔</button>
+        <a href="index.html" class="btn">◀ 首頁</a>
+        <div>
+            <button class="btn active" id="btnRecite" onclick="setMode('recite')">背誦表</button>
+            <button class="btn" id="btnQuiz" onclick="setMode('quiz')">隊長挑戰</button>
+        </div>
     </header>
 
-    <div class="app-container">
-        <div class="controls">
-            <select id="opSelect" onchange="initGame()">
-                <option value="*">× 乘法</option>
-                <option value="+">＋ 加法</option>
-                <option value="-">－ 減法</option>
-            </select>
-            <select id="levelSelect" onchange="initGame()">
-                <option value="1">Level 1</option>
-                <option value="2">Level 2</option>
-                <option value="3">Level 3</option>
-                <option value="4">Level 4</option>
-                <option value="5">Level 5</option>
-                <option value="6">Level 6</option>
-                <option value="7">Level 7</option>
-                <option value="8">Level 8</option>
-                <option value="9">Level 9</option>
-                <option value="random">🌟 隊長挑戰</option>
-            </select>
-            <div class="mode-switch">
-                <button class="mode-btn active" id="modeRecite" onclick="setMode('recite')">背誦</button>
-                <button class="mode-btn" id="modeQuiz" onclick="setMode('quiz')">測驗</button>
+    <div id="content">
+        <div id="reciteArea" class="table-grid"></div>
+        
+        <div id="quizArea" class="quiz-container">
+            <div style="margin-bottom:10px;">
+                <label><input type="radio" name="op" value="*" checked onchange="nextQ()"> 乘法</label>
+                <label><input type="radio" name="op" value="/" onchange="nextQ()"> 除法</label>
             </div>
-        </div>
-
-        <div class="display-card">
-            <div class="expression" id="expressionArea"></div>
-            <div class="recite-nav" id="reciteNav">
-                <button class="nav-btn" onclick="prevRecite()">◀</button>
-                <button class="nav-btn" onclick="nextRecite()">▶</button>
+            <div class="q-text" id="question">2 × 3 = ?</div>
+            <div class="input-area">
+                <input type="number" id="ansInput" readonly>
             </div>
-        </div>
-
-        <div class="keypad" id="keypad">
-            <button class="key" onclick="pressKey('1')">1</button>
-            <button class="key" onclick="pressKey('2')">2</button>
-            <button class="key" onclick="pressKey('3')">3</button>
-            <button class="key" onclick="pressKey('4')">4</button>
-            <button class="key" onclick="pressKey('5')">5</button>
-            <button class="key" onclick="pressKey('6')">6</button>
-            <button class="key" onclick="pressKey('7')">7</button>
-            <button class="key" onclick="pressKey('8')">8</button>
-            <button class="key" onclick="pressKey('9')">9</button>
-            <button class="key key-c" onclick="pressKey('C')">C</button>
-            <button class="key" onclick="pressKey('0')">0</button>
-            <button class="key key-ok" onclick="checkAnswer()">哨子</button>
+            <div class="numpad">
+                <div class="key" onclick="kp('1')">1</div><div class="key" onclick="kp('2')">2</div><div class="key" onclick="kp('3')">3</div>
+                <div class="key" onclick="kp('4')">4</div><div class="key" onclick="kp('5')">5</div><div class="key" onclick="kp('6')">6</div>
+                <div class="key" onclick="kp('7')">7</div><div class="key" onclick="kp('8')">8</div><div class="key" onclick="kp('9')">9</div>
+                <div class="key" style="background:#ffcdd2" onclick="kp('C')">C</div>
+                <div class="key" onclick="kp('0')">0</div>
+                <div class="key" style="background:#c8e6c9" onclick="check()">OK</div>
+            </div>
         </div>
     </div>
 
+    <div class="modal" id="winModal">
+        <h1>你好棒! 🌟</h1>
+        <button onclick="nextQ()">下一題</button>
+    </div>
+
     <script>
-        let currentMode = 'recite';
-        let currentLevel = 1;
-        let currentOp = '*';
-        let questionData = { num1: 1, num2: 1, ans: 1 };
-        let currentInput = '';
-        let isMuted = false;
-        let isProcessing = false;
-
-        const praises = ["任務完成！", "好棒的運送！", "皮克敏很開心！", "隊長太強了！", "完美搬運！"];
-
-        window.onload = () => initGame();
-
-        function initGame() {
-            const lSel = document.getElementById('levelSelect');
-            const oSel = document.getElementById('opSelect');
-            currentLevel = lSel.value === 'random' ? 'random' : parseInt(lSel.value);
-            currentOp = oSel.value;
-            currentInput = '';
-            
-            generateQuestion(true); // reset
-            render();
-        }
-
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('modeRecite').className = mode === 'recite' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('modeQuiz').className = mode === 'quiz' ? 'mode-btn active' : 'mode-btn';
-            currentInput = '';
-            render();
-        }
-
-        function generateQuestion(isReset = false) {
-            let n1, n2;
-            let level = currentLevel === 'random' ? Math.floor(Math.random()*9)+1 : currentLevel;
-            let variable = Math.floor(Math.random()*9) + 1; // 1-9
-
-            if (isReset && currentMode === 'recite') variable = 1;
-
-            if (currentOp === '*') {
-                // 乘法：Level * 1~9
-                n1 = level; n2 = variable;
-            } else if (currentOp === '+') {
-                // 加法：Level + 1~9 (例如 Level 1 就是 1+?, Level 9 就是 9+?)
-                n1 = level; n2 = variable;
-            } else if (currentOp === '-') {
-                // 減法：確保答案是正數。 (Level + 1~9) - Level = ?
-                // 題目設計：被減數 = Level + variable, 減數 = Level
-                // 這樣題目會變成: (5+3) - 5 = 3. 
-                // 或者更直覺一點： X - Level = ? (確保 X > Level)
-                n2 = level; 
-                n1 = n2 + variable; // 被減數一定比較大
-            }
-
-            questionData = { num1: n1, num2: n2, ans: eval(`${n1} ${currentOp} ${n2}`) };
-            // 如果是背誦且沒reset，就讓 variable 遞增 (這在 render 時處理)
-        }
-
-        function nextRecite() {
-            // 背誦模式下的簡單遞增邏輯
-            if (currentLevel === 'random') {
-                generateQuestion();
-            } else {
-                // 嘗試讓第二個數字+1
-                let nextVar;
-                if(currentOp === '-') {
-                    // 減法時，增加被減數 (e.g. 6-5, 7-5, 8-5)
-                    nextVar = (questionData.num1 - questionData.num2) + 1;
-                    if(nextVar > 9) nextVar = 1;
-                    questionData.num1 = questionData.num2 + nextVar;
-                } else {
-                    nextVar = questionData.num2 + 1;
-                    if(nextVar > 9) nextVar = 1;
-                    questionData.num2 = nextVar;
-                }
-                questionData.ans = eval(`${questionData.num1} ${currentOp} ${questionData.num2}`);
-            }
-            render();
-        }
-
-        function prevRecite() {
-             // 簡化：直接隨機或者簡單減
-             generateQuestion(); 
-             render();
-        }
-
-        function render() {
-            const expArea = document.getElementById('expressionArea');
-            const reciteNav = document.getElementById('reciteNav');
-            const keypad = document.getElementById('keypad');
-            const { num1, num2, ans } = questionData;
-            
-            let opSymbol = currentOp === '*' ? '×' : currentOp;
-
-            let html = `
-                <div class="num-pellet">${num1}</div>
-                <span class="op">${opSymbol}</span>
-                <div class="num-pellet" style="background:var(--pikmin-blue)">${num2}</div>
-                <span class="op">=</span>
-            `;
-
-            if (currentMode === 'recite') {
-                html += `<div class="num-pellet" style="background:var(--pikmin-yellow);color:#5d4037">${ans}</div>`;
-                reciteNav.style.display = 'flex';
-                keypad.classList.add('hidden');
-                speakEquation(num1, num2, ans);
-            } else {
-                html += `<div class="input-box ${currentInput ? '' : 'empty'}">${currentInput || '?'}</div>`;
-                reciteNav.style.display = 'none';
-                keypad.classList.remove('hidden');
-            }
-            expArea.innerHTML = html;
-        }
-
-        function pressKey(key) {
-            if (isProcessing) return;
-            if (key !== 'C' && key !== 'OK') speakText(key);
-
-            if (key === 'C') currentInput = '';
-            else if (key === 'OK') checkAnswer();
-            else if (currentInput.length < 3) currentInput += key;
-            
-            // 更新畫面輸入框
-            const inputBox = document.querySelector('.input-box');
-            if(inputBox) inputBox.innerText = currentInput;
-        }
-
-        async function checkAnswer() {
-            if (!currentInput || isProcessing) return;
-            
-            const userAnswer = parseInt(currentInput);
-            const inputBox = document.querySelector('.input-box');
-
-            if (userAnswer === questionData.ans) {
-                isProcessing = true;
-                inputBox.classList.add('correct');
-                playWhistle();
-                await wait(600);
-                speakText("答對了");
-                await wait(800);
-                speakText(praises[Math.floor(Math.random() * praises.length)]);
-                await wait(1500);
-                
-                generateQuestion(); // 下一題
-                currentInput = '';
-                isProcessing = false;
-                render();
-            } else {
-                inputBox.classList.add('wrong');
-                playFailSound();
-                setTimeout(() => {
-                    inputBox.classList.remove('wrong');
-                    currentInput = '';
-                    inputBox.innerText = '?';
-                }, 1000);
-            }
-        }
-
-        // --- 語音 ---
-        function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').innerText = isMuted ? '🔕' : '🔔'; }
+        let curAns = 0;
         
-        function speakText(text) {
-            if (isMuted) return;
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'zh-TW'; u.pitch = 1.3; window.speechSynthesis.speak(u);
+        window.onload = () => { genTables(); setMode('recite'); };
+
+        function setMode(m) {
+            document.getElementById('reciteArea').style.display = m === 'recite' ? 'grid' : 'none';
+            document.getElementById('quizArea').style.display = m === 'quiz' ? 'flex' : 'none';
+            document.getElementById('btnRecite').className = m === 'recite' ? 'btn active' : 'btn';
+            document.getElementById('btnQuiz').className = m === 'quiz' ? 'btn active' : 'btn';
+            if(m === 'quiz') nextQ();
         }
 
-        function speakEquation(n1, n2, ans) {
-            let opText = "成以";
-            if(currentOp === '+') opText = "加";
-            if(currentOp === '-') opText = "減";
-            speakText(`${n1} ${opText} ${n2} 等於 ${ans}`);
+        function genTables() {
+            const container = document.getElementById('reciteArea');
+            for(let i=2; i<=9; i++) {
+                let html = `<div class="table-card"><div style="text-align:center;font-weight:bold;margin-bottom:5px;font-size:1.2rem;color:#008ba3">${i} 的乘法</div>`;
+                for(let j=1; j<=9; j++) {
+                    html += `<div class="row">${i} × ${j} = ${i*j}</div>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            }
         }
 
-        // --- 音效 (維持原樣) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        function playWhistle() { /* 參考上一個版本的代碼，為節省篇幅省略，請直接用上一版的 playWhistle */ 
-            if (isMuted) return; if (audioCtx.state === 'suspended') audioCtx.resume();
-            const t = audioCtx.currentTime; const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o1.freq = 1200; o2.freq = 1250; o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
-            o1.start(t); o2.start(t); g.gain.setValueAtTime(0.2, t); g.gain.linearRampToValueAtTime(0, t+0.3); o1.stop(t+0.3); o2.stop(t+0.3);
+        function nextQ() {
+            document.getElementById('winModal').style.display = 'none';
+            document.getElementById('ansInput').value = '';
+            const isMult = document.querySelector('input[name="op"]:checked').value === '*';
+            
+            let n1, n2;
+            if(isMult) {
+                n1 = Math.floor(Math.random()*8)+2; // 2-9
+                n2 = Math.floor(Math.random()*9)+1; // 1-9
+                curAns = n1 * n2;
+                document.getElementById('question').innerText = `${n1} × ${n2} = ?`;
+            } else {
+                // 除法：確保整除 (反向乘法)
+                n2 = Math.floor(Math.random()*8)+2; 
+                curAns = Math.floor(Math.random()*9)+1; 
+                n1 = n2 * curAns;
+                document.getElementById('question').innerText = `${n1} ÷ ${n2} = ?`;
+            }
         }
-        function playFailSound() {
-             if (isMuted) return; if (audioCtx.state === 'suspended') audioCtx.resume();
-             const t = audioCtx.currentTime; const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-             o.type='triangle'; o.frequency.value=200; o.frequency.linearRampToValueAtTime(100, t+0.4);
-             o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+0.4);
+
+        function kp(k) {
+            const inp = document.getElementById('ansInput');
+            if(k === 'C') inp.value = '';
+            else inp.value += k;
         }
-        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function check() {
+            if(parseInt(document.getElementById('ansInput').value) === curAns) {
+                document.getElementById('winModal').style.display = 'flex';
+            } else {
+                alert("再試試看喔！");
+                document.getElementById('ansInput').value = '';
+            }
+        }
     </script>
 </body>
 </html>
