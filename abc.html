@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Alphabet</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #e3f2fd; padding: 10px; display: flex; flex-direction: column; align-items: center;}
+        header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; margin-bottom: 20px;}
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; width: 100%; max-width: 600px; }
+        .card { background: white; border-radius: 15px; height: 80px; border: 2px solid #2196f3; display: flex; justify-content: center; align-items: center; font-size: 2rem; cursor: pointer; box-shadow: 2px 2px 0 #1976d2; color: #1565c0; font-weight: bold;}
+        .card:active { transform: translateY(2px); box-shadow: none; background: #bbdefb; }
+        .btn { text-decoration: none; background: #2196f3; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="btn">◀ Home</a>
+        <h2 style="margin:0; color:#1565c0">ABC Alphabet</h2>
+    </header>
+    <div class="grid" id="grid"></div>
+
+    <script>
+        const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const grid = document.getElementById('grid');
+        
+        abc.split('').forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerText = s;
+            div.onclick = () => speak(s);
+            grid.appendChild(div);
+        });
+
+        function speak(txt) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang = 'en-US';
+            u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+    </script>
+</body>
+</html>
