@@ -17,7 +17,6 @@
             margin: 0;
             font-family: "Varela Round", "Nunito", sans-serif;
             background-color: var(--bg-paper);
-            /* 方格紙背景效果 */
             background-image: linear-gradient(#e0e0e0 1px, transparent 1px),
                               linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
             background-size: 20px 20px;
@@ -59,32 +58,24 @@
             transition: transform 0.2s;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .game-card:active { transform: scale(0.98); }
-        
-        /* 裝飾用的葉子 */
-        .leaf-decor {
-            position: absolute;
-            top: -10px; right: -10px;
-            font-size: 4rem;
-            opacity: 0.1;
-            transform: rotate(45deg);
-        }
-
         .icon { font-size: 4rem; margin-bottom: 15px; }
         .title { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; }
         .desc { font-size: 0.95rem; color: #777; }
 
-        /* 紅皮克敏風格 - 數學 */
+        /* 風格設定 */
         .card-math { border-color: var(--pikmin-red); }
         .card-math:hover { background: #fff0f0; }
-        .card-math .icon { text-shadow: 2px 2px 0 #ffcccc; }
         
-        /* 藍皮克敏風格 - 記憶 */
         .card-memory { border-color: var(--pikmin-blue); }
         .card-memory:hover { background: #f0f8ff; }
-        .card-memory .icon { text-shadow: 2px 2px 0 #cce5ff; }
 
+        .card-maze { border-color: var(--pikmin-yellow); }
+        .card-maze:hover { background: #fffde7; }
     </style>
 </head>
 <body>
@@ -93,17 +84,21 @@
 
     <div class="menu-grid">
         <a href="math.html" class="game-card card-math">
-            <div class="leaf-decor">🍁</div>
             <div class="icon">🔴</div> 
             <div class="title">搬運算數</div>
-            <div class="desc">和紅皮克敏一起練習戰鬥(乘法)！</div>
+            <div class="desc">加法、減法與乘法挑戰！</div>
         </a>
 
         <a href="memory.html" class="game-card card-memory">
-            <div class="leaf-decor">💧</div>
             <div class="icon">🔵</div>
             <div class="title">尋找夥伴</div>
-            <div class="desc">幫藍皮克敏找回走散的朋友！</div>
+            <div class="desc">記憶大考驗 (支援 8x8)</div>
+        </a>
+
+        <a href="maze.html" class="game-card card-maze">
+            <div class="icon">🟡</div>
+            <div class="title">地下迷宮</div>
+            <div class="desc">帶領皮克敏找到出口！</div>
         </a>
     </div>
 
