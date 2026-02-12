@@ -3,233 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>皮克敏地下迷宮</title>
+    <title>手指迷宮</title>
     <style>
-        :root {
-            --bg-dark: #3e2723;
-            --path-light: #d7ccc8;
-            --pikmin-glow: #ffeb3b;
-        }
-        body {
-            margin: 0; background: var(--bg-dark); color: white;
-            font-family: "Varela Round", sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden; touch-action: none;
-        }
-        header { width:100%; padding:10px; display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.3); }
-        .btn {
-            background: #fff; color: #333; padding: 5px 15px; border-radius: 20px; text-decoration: none; font-weight: bold;
-        }
-        
-        #game-container {
-            position: relative; margin-top: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 4px solid #8d6e63;
-        }
-        
-        /* 虛擬十字鍵 */
-        .controls {
-            margin-top: auto; margin-bottom: 20px;
-            display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px;
-            gap: 5px;
-        }
-        .d-btn {
-            width: 60px; height: 60px; background: rgba(255,255,255,0.2);
-            border-radius: 10px; border: 2px solid rgba(255,255,255,0.4);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 2rem; cursor: pointer; user-select: none;
-        }
-        .d-btn:active { background: rgba(255,255,255,0.5); }
-        .d-up { grid-column: 2; grid-row: 1; }
-        .d-left { grid-column: 1; grid-row: 2; }
-        .d-down { grid-column: 2; grid-row: 2; }
-        .d-right { grid-column: 3; grid-row: 2; }
-
-        .win-msg {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255,255,255,0.95); color: #333; padding: 20px;
-            border-radius: 15px; text-align: center; display: none; z-index: 10;
-        }
+        body { margin: 0; background: #3e2723; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        header { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; display: flex; gap: 10px; z-index: 10; pointer-events: none; }
+        select, button, a { pointer-events: auto; background: white; border: none; padding: 8px 15px; border-radius: 15px; font-weight: bold; text-decoration: none; color: #333; }
+        canvas { display: block; background: #5d4037; }
+        .msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.9); padding: 20px; border-radius: 20px; text-align: center; display: none; }
     </style>
 </head>
 <body>
     <header>
-        <a href="index.html" class="btn">◀ 基地</a>
-        <span style="font-size:1.2rem;">地下迷宮 Lv. <span id="lvl">1</span></span>
-        <button class="btn" onclick="initMaze()">重置</button>
+        <a href="index.html">◀</a>
+        <select id="diff" onchange="init()">
+            <option value="5">Lv 1</option>
+            <option value="8">Lv 2</option>
+            <option value="12">Lv 3</option>
+            <option value="18">Lv 4</option>
+            <option value="25">Lv 5</option>
+        </select>
+        <select id="type" onchange="init()">
+            <option value="maze">迷宮版 (有牆)</option>
+            <option value="line">線條版 (連連看)</option>
+        </select>
+        <button onclick="init()">重置</button>
     </header>
 
-    <div id="game-container">
-        <canvas id="mazeCanvas"></canvas>
-        <div class="win-msg" id="winMsg">
-            <h2>🚀 抵達出口!</h2>
-            <button class="btn" style="background: #ff4d4d; color:white; padding:10px 30px;" onclick="nextLevel()">下一層</button>
-        </div>
-    </div>
+    <canvas id="cvs"></canvas>
 
-    <div class="controls">
-        <div class="d-btn d-up" ontouchstart="move(0, -1)" onmousedown="move(0, -1)">⬆️</div>
-        <div class="d-btn d-left" ontouchstart="move(-1, 0)" onmousedown="move(-1, 0)">⬅️</div>
-        <div class="d-btn d-down" ontouchstart="move(0, 1)" onmousedown="move(0, 1)">⬇️</div>
-        <div class="d-btn d-right" ontouchstart="move(1, 0)" onmousedown="move(1, 0)">➡️</div>
+    <div class="msg" id="winMsg">
+        <h1>抵達出口! 🚀</h1>
+        <button onclick="init()">再玩一次</button>
     </div>
 
     <script>
-        const canvas = document.getElementById('mazeCanvas');
+        const canvas = document.getElementById('cvs');
         const ctx = canvas.getContext('2d');
-        let level = 1;
-        let cols, rows;
-        let cellSize;
-        let grid = [];
-        let player = {x:0, y:0};
-        let goal = {x:0, y:0};
-        let stack = [];
+        let cols, rows, size, grid = [], player = {x:0, y:0};
+        let isDrawing = false;
+        
+        window.onload = init;
+        window.onresize = init;
 
-        // 初始化
-        window.onload = initMaze;
-
-        function initMaze() {
+        function init() {
             document.getElementById('winMsg').style.display = 'none';
-            document.getElementById('lvl').innerText = level;
+            const diff = parseInt(document.getElementById('diff').value);
+            const type = document.getElementById('type').value;
             
-            // 根據等級增加難度
-            const baseSize = 10;
-            cols = baseSize + Math.floor(level/2);
-            rows = baseSize + Math.floor(level/2);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
             
-            // 計算 Canvas 大小 (RWD)
-            const maxWidth = window.innerWidth - 30;
-            const maxHeight = window.innerHeight * 0.55;
-            cellSize = Math.floor(Math.min(maxWidth / cols, maxHeight / rows));
-            
-            canvas.width = cols * cellSize;
-            canvas.height = rows * cellSize;
-
-            // 迷宮演算法 (DFS)
-            grid = [];
-            for(let y=0; y<rows; y++) {
-                let row = [];
-                for(let x=0; x<cols; x++) {
-                    row.push({x, y, walls:[true, true, true, true], visited: false});
-                }
-                grid.push(row);
-            }
+            cols = diff; 
+            rows = Math.floor(cols * (canvas.height / canvas.width));
+            size = Math.min(canvas.width/cols, canvas.height/rows);
 
             // 生成迷宮
-            let current = grid[0][0];
-            current.visited = true;
-            stack = []; // reset stack
+            grid = [];
+            for(let y=0; y<rows; y++) {
+                let r = [];
+                for(let x=0; x<cols; x++) r.push({x, y, walls:[1,1,1,1], visited:false});
+                grid.push(r);
+            }
             
-            // 簡單的遞迴回溯生成
+            // DFS 算法生成
+            let stack = [], current = grid[0][0];
+            current.visited = true;
             do {
-                let next = getUnvisitedNeighbor(current);
-                if (next) {
+                let next = getNeighbor(current);
+                if(next) {
                     next.visited = true;
                     stack.push(current);
-                    removeWalls(current, next);
+                    removeWall(current, next);
                     current = next;
-                } else if (stack.length > 0) {
-                    current = stack.pop();
-                }
-            } while (stack.length > 0);
+                } else if(stack.length) current = stack.pop();
+            } while(stack.length);
 
-            // 設定起點終點
-            player = {x:0, y:0};
-            goal = {x: cols-1, y: rows-1};
-
-            draw();
+            // 繪製底圖
+            drawMap(type);
         }
 
-        function getUnvisitedNeighbor(cell) {
-            let neighbors = [];
-            let {x, y} = cell;
-            if(y > 0 && !grid[y-1][x].visited) neighbors.push(grid[y-1][x]);
-            if(x < cols-1 && !grid[y][x+1].visited) neighbors.push(grid[y][x+1]);
-            if(y < rows-1 && !grid[y+1][x].visited) neighbors.push(grid[y+1][x]);
-            if(x > 0 && !grid[y][x-1].visited) neighbors.push(grid[y][x-1]);
+        function getNeighbor(c) {
+            let n = [], {x,y} = c;
+            if(y>0 && !grid[y-1][x].visited) n.push(grid[y-1][x]);
+            if(x<cols-1 && !grid[y][x+1].visited) n.push(grid[y][x+1]);
+            if(y<rows-1 && !grid[y+1][x].visited) n.push(grid[y+1][x]);
+            if(x>0 && !grid[y][x-1].visited) n.push(grid[y][x-1]);
+            return n.length ? n[Math.floor(Math.random()*n.length)] : undefined;
+        }
+
+        function removeWall(a, b) {
+            let dx = a.x - b.x, dy = a.y - b.y;
+            if(dx === 1) { a.walls[3]=0; b.walls[1]=0; }
+            if(dx === -1) { a.walls[1]=0; b.walls[3]=0; }
+            if(dy === 1) { a.walls[0]=0; b.walls[2]=0; }
+            if(dy === -1) { a.walls[2]=0; b.walls[0]=0; }
+        }
+
+        function drawMap(type) {
+            ctx.fillStyle = '#3e2723'; ctx.fillRect(0,0,canvas.width, canvas.height);
             
-            if(neighbors.length > 0) return neighbors[Math.floor(Math.random() * neighbors.length)];
-            return undefined;
-        }
-
-        function removeWalls(a, b) {
-            let x = a.x - b.x;
-            if(x === 1) { a.walls[3] = false; b.walls[1] = false; }
-            else if(x === -1) { a.walls[1] = false; b.walls[3] = false; }
-            
-            let y = a.y - b.y;
-            if(y === 1) { a.walls[0] = false; b.walls[2] = false; }
-            else if(y === -1) { a.walls[2] = false; b.walls[0] = false; }
-        }
-
-        function draw() {
-            ctx.fillStyle = '#3e2723';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            for(let y=0; y<rows; y++) {
-                for(let x=0; x<cols; x++) {
-                    let cell = grid[y][x];
-                    let cx = x * cellSize;
-                    let cy = y * cellSize;
-                    
-                    ctx.fillStyle = '#d7ccc8'; // 地板色
-                    ctx.fillRect(cx, cy, cellSize, cellSize);
-
-                    ctx.strokeStyle = '#5d4037'; // 牆壁色
-                    ctx.lineWidth = 2;
+            if(type === 'maze') {
+                ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 4;
+                for(let y=0; y<rows; y++) for(let x=0; x<cols; x++) {
+                    let c = grid[y][x], px = x*size, py = y*size;
                     ctx.beginPath();
-                    if(cell.walls[0]) { ctx.moveTo(cx, cy); ctx.lineTo(cx+cellSize, cy); } // Top
-                    if(cell.walls[1]) { ctx.moveTo(cx+cellSize, cy); ctx.lineTo(cx+cellSize, cy+cellSize); } // Right
-                    if(cell.walls[2]) { ctx.moveTo(cx+cellSize, cy+cellSize); ctx.lineTo(cx, cy+cellSize); } // Bottom
-                    if(cell.walls[3]) { ctx.moveTo(cx, cy+cellSize); ctx.lineTo(cx, cy); } // Left
+                    if(c.walls[0]) {ctx.moveTo(px,py); ctx.lineTo(px+size,py);}
+                    if(c.walls[1]) {ctx.moveTo(px+size,py); ctx.lineTo(px+size,py+size);}
+                    if(c.walls[2]) {ctx.moveTo(px+size,py+size); ctx.lineTo(px,py+size);}
+                    if(c.walls[3]) {ctx.moveTo(px,py+size); ctx.lineTo(px,py);}
                     ctx.stroke();
                 }
+            } else {
+                // 線條版：只畫路徑點
+                ctx.fillStyle = '#6d4c41';
+                for(let y=0; y<rows; y++) for(let x=0; x<cols; x++) {
+                    ctx.beginPath(); ctx.arc(x*size+size/2, y*size+size/2, size/10, 0, Math.PI*2); ctx.fill();
+                }
             }
 
-            // 畫玩家 (皮克敏)
-            ctx.font = `${cellSize*0.7}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🌱', player.x*cellSize + cellSize/2, player.y*cellSize + cellSize/2);
-
-            // 畫終點 (火箭)
-            ctx.fillText('🚀', goal.x*cellSize + cellSize/2, goal.y*cellSize + cellSize/2);
+            // 起點終點
+            ctx.font = `${size/1.5}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('🌱', size/2, size/2);
+            ctx.fillText('🚀', (cols-1)*size+size/2, (rows-1)*size+size/2);
         }
 
-        function move(dx, dy) {
-            let currentCell = grid[player.y][player.x];
-            let canMove = false;
-
-            if(dx === 0 && dy === -1 && !currentCell.walls[0]) canMove = true;
-            if(dx === 1 && dy === 0 && !currentCell.walls[1]) canMove = true;
-            if(dx === 0 && dy === 1 && !currentCell.walls[2]) canMove = true;
-            if(dx === -1 && dy === 0 && !currentCell.walls[3]) canMove = true;
-
-            if(canMove) {
-                player.x += dx;
-                player.y += dy;
-                draw();
-                checkWin();
-            }
+        // 觸控畫線邏輯
+        function getPos(e) {
+            const t = e.touches ? e.touches[0] : e;
+            return {x: t.clientX, y: t.clientY};
         }
 
-        function checkWin() {
-            if(player.x === goal.x && player.y === goal.y) {
+        ['mousedown', 'touchstart'].forEach(ev => canvas.addEventListener(ev, e => {
+            isDrawing = true;
+            const p = getPos(e);
+            ctx.beginPath(); ctx.moveTo(p.x, p.y);
+            ctx.strokeStyle = '#ffff00'; ctx.lineWidth = size/4; ctx.lineCap = 'round';
+        }));
+
+        ['mousemove', 'touchmove'].forEach(ev => canvas.addEventListener(ev, e => {
+            if(!isDrawing) return;
+            e.preventDefault();
+            const p = getPos(e);
+            ctx.lineTo(p.x, p.y); ctx.stroke();
+            
+            // 簡單判斷終點
+            const endX = (cols-1)*size, endY = (rows-1)*size;
+            if(p.x > endX && p.y > endY) {
                 document.getElementById('winMsg').style.display = 'block';
+                isDrawing = false;
             }
-        }
+        }, {passive: false}));
 
-        function nextLevel() {
-            level++;
-            initMaze();
-        }
-        
-        // 鍵盤支援 (電腦版)
-        document.addEventListener('keydown', (e) => {
-            if(e.key === 'ArrowUp') move(0, -1);
-            if(e.key === 'ArrowRight') move(1, 0);
-            if(e.key === 'ArrowDown') move(0, 1);
-            if(e.key === 'ArrowLeft') move(-1, 0);
-        });
+        ['mouseup', 'touchend'].forEach(ev => canvas.addEventListener(ev, () => isDrawing = false));
+
     </script>
 </body>
 </html>
