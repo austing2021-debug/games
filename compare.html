@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>皮克敏比大小</title>
+    <style>
+        :root { --bg: #e3f2fd; --blue: #4da6ff; --dark: #0d47a1; }
+        body { margin: 0; background: var(--bg); font-family: "Varela Round", sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; }
+        header { padding: 10px; display: flex; flex-direction: column; gap: 10px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        .btn { text-decoration: none; background: var(--blue); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; border:none; cursor: pointer;}
+        
+        .controls { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        select { padding: 8px; border-radius: 10px; border: 2px solid var(--blue); font-weight: bold; color: var(--dark); flex: 1; text-align: center;}
+
+        #question-text { font-size: 1.5rem; color: var(--dark); text-align: center; margin: 20px; font-weight: 800; }
+        
+        #game-area { flex: 1; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; align-content: center; gap: 15px; padding: 10px; position: relative;}
+        
+        .bubble {
+            width: 70px; height: 70px; background: white; border: 4px solid var(--blue); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 2rem; color: var(--dark); font-weight: bold;
+            cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(77, 166, 255, 0.3);
+            animation: float 3s infinite ease-in-out;
+        }
+        .bubble:active { transform: scale(0.9); background: #bbdefb; }
+        
+        /* 數量多時縮小 */
+        .bubble.small { width: 55px; height: 55px; font-size: 1.5rem; }
+
+        @keyframes float { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-10px);} }
+        @keyframes correct-anim { 0% {transform: scale(1);} 50% {transform: scale(1.4); background: #a5d6a7; border-color: #4caf50;} 100% {transform: scale(1);} }
+        .correct-bubble { animation: correct-anim 0.5s !important; }
+
+        .feedback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; opacity: 0; pointer-events: none; z-index: 100; transition: opacity 0.5s; text-shadow: 2px 2px 0 #fff;}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="row">
+            <a href="index.html" class="btn">◀ 基地</a>
+            <span style="font-weight:bold; color:var(--dark)">分數: <span id="score">0</span></span>
+        </div>
+        <div class="controls">
+            <select id="countSelect" onchange="initGame()">
+                <option value="2">2 個數字</option>
+                <option value="3">3 個數字</option>
+                <option value="5">5 個數字</option>
+                <option value="8">8 個數字</option>
+                <option value="10">10 個數字</option>
+            </select>
+            <select id="modeSelect" onchange="initGame()">
+                <option value="max">找最大</option>
+                <option value="min">找最小</option>
+            </select>
+        </div>
+    </header>
+
+    <div id="question-text">請找出最大的數字！</div>
+    
+    <div id="game-area"></div>
+    <div class="feedback" id="feedback">⭕</div>
+
+    <script>
+        let score = 0;
+        let currentNumbers = [];
+        let targetValue = 0;
+        let mode = 'max';
+        let isProcessing = false;
+
+        window.onload = initGame;
+
+        function initGame() {
+            const count = parseInt(document.getElementById('countSelect').value);
+            mode = document.getElementById('modeSelect').value;
+            document.getElementById('question-text').innerText = mode === 'max' ? "誰最大？" : "誰最小？";
+            
+            const area = document.getElementById('game-area');
+            area.innerHTML = '';
+            currentNumbers = [];
+
+            // 產生不重複的隨機數字 (1-100)
+            while(currentNumbers.length < count) {
+                let n = Math.floor(Math.random() * 100) + 1;
+                if(!currentNumbers.includes(n)) currentNumbers.push(n);
+            }
+
+            // 決定目標
+            if(mode === 'max') targetValue = Math.max(...currentNumbers);
+            else targetValue = Math.min(...currentNumbers);
+
+            // 渲染泡泡
+            currentNumbers.forEach((num, i) => {
+                const bubble = document.createElement('div');
+                bubble.classList.add('bubble');
+                if(count > 5) bubble.classList.add('small');
+                bubble.innerText = num;
+                // 每個泡泡動畫稍微錯開
+                bubble.style.animationDelay = (i * 0.2) + 's';
+                
+                bubble.onclick = () => checkAnswer(bubble, num);
+                area.appendChild(bubble);
+            });
+            isProcessing = false;
+        }
+
+        function checkAnswer(el, val) {
+            if(isProcessing) return;
+            
+            if(val === targetValue) {
+                isProcessing = true;
+                el.classList.add('correct-bubble');
+                score++;
+                document.getElementById('score').innerText = score;
+                playCorrect();
+                showFeedback('⭕');
+                setTimeout(initGame, 1000);
+            } else {
+                playWrong();
+                el.style.background = '#ffcdd2'; // 錯誤變紅
+                el.style.borderColor = '#e57373';
+                showFeedback('❌');
+                setTimeout(() => {
+                    el.style.background = 'white';
+                    el.style.borderColor = '#4da6ff';
+                }, 500);
+            }
+        }
+
+        function showFeedback(emoji) {
+            const fb = document.getElementById('feedback');
+            fb.innerText = emoji;
+            fb.style.opacity = 1;
+            setTimeout(() => fb.style.opacity = 0, 500);
+        }
+
+        // 音效
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(f, type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = f;
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15); osc.stop(audioCtx.currentTime + 0.15);
+        }
+        function playCorrect() { playTone(880, 'sine'); setTimeout(()=>playTone(1760, 'sine'), 100); }
+        function playWrong() { playTone(150, 'sawtooth'); }
+    </script>
+</body>
+</html>

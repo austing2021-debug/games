@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>皮克敏排序整理</title>
+    <style>
+        :root { --bg: #fff3e0; --brown: #5d4037; --red: #ff4d4d; }
+        body { margin: 0; background: var(--bg); font-family: "Varela Round", sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; touch-action: none; }
+        header { padding: 10px; display: flex; justify-content: space-between; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { text-decoration: none; background: var(--red); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; border:none; font-size:1rem;}
+        select { font-size: 1rem; padding: 5px; border-radius: 10px; border: 2px solid var(--red); color: var(--brown); background: white;}
+
+        #game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 20px; }
+        
+        .pots-container { display: flex; gap: 10px; width: 100%; justify-content: center; flex-wrap: wrap; }
+        .pot {
+            width: 60px; height: 70px; background: #8d6e63; border-radius: 5px 5px 15px 15px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            position: relative; border-top: 5px solid #5d4037;
+        }
+        .pot::after { content: '🌱'; font-size: 1.5rem; margin-top: -15px; opacity: 0.3; }
+        .pot.filled { background: #a1887f; }
+        .pot-label { position: absolute; bottom: -25px; font-size: 0.8rem; color: #5d4037; font-weight: bold; display:none;} /* 隱藏提示增加難度，或開啟輔助 */
+
+        .seeds-container { display: flex; gap: 15px; width: 100%; justify-content: center; flex-wrap: wrap; height: 100px; }
+        .seed {
+            width: 55px; height: 55px; background: var(--red); border-radius: 50%; color: white;
+            display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold;
+            box-shadow: inset -3px -3px 0 rgba(0,0,0,0.2); cursor: grab; z-index: 100;
+        }
+        .seed.placed { position: absolute; top: 5px; left: 2.5px; z-index: 10; cursor: default; box-shadow: none; pointer-events: none;}
+
+        .win-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="btn">◀ 基地</a>
+        <select id="levelSelect" onchange="initGame()">
+            <option value="0">1 - 10</option>
+            <option value="1">11 - 20</option>
+            <option value="2">21 - 30</option>
+            <option value="3">31 - 40</option>
+            <option value="4">41 - 50</option>
+            <option value="9">91 - 100</option>
+        </select>
+    </header>
+
+    <div id="game-area">
+        <div style="text-align:center; color:#5d4037; margin-bottom:10px;">請依照 <b>小 ➔ 大</b> 順序排列</div>
+        <div class="pots-container" id="pots"></div>
+        <div class="seeds-container" id="seeds"></div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <h1>🌱 隊伍整齊！</h1>
+        <button class="btn" onclick="initGame()" style="font-size:1.5rem; padding:10px 30px;">再來一次</button>
+    </div>
+
+    <script>
+        let currentLevel = 0;
+        let numbers = [];
+        
+        window.onload = initGame;
+
+        function initGame() {
+            const select = document.getElementById('levelSelect');
+            currentLevel = parseInt(select.value);
+            document.getElementById('winModal').style.display = 'none';
+            
+            const startNum = currentLevel * 10 + 1;
+            const range = [];
+            for(let i=0; i<10; i++) range.push(startNum + i);
+            
+            // 從範圍內隨機選 5 個數字來排序 (手機螢幕塞不下10個)
+            range.sort(() => Math.random() - 0.5);
+            numbers = range.slice(0, 5); // 取 5 個
+            numbers.sort((a,b) => a-b); // 這是正確答案順序
+            
+            const potsDiv = document.getElementById('pots');
+            const seedsDiv = document.getElementById('seeds');
+            potsDiv.innerHTML = '';
+            seedsDiv.innerHTML = '';
+
+            // 建立花盆 (Target)
+            numbers.forEach((num, index) => {
+                const pot = document.createElement('div');
+                pot.classList.add('pot');
+                pot.dataset.expect = num; // 花盆期待的數字
+                potsDiv.appendChild(pot);
+            });
+
+            // 建立種子 (Draggable) - 打亂順序
+            let shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
+            shuffledNumbers.forEach(num => {
+                const seed = document.createElement('div');
+                seed.classList.add('seed');
+                seed.innerText = num;
+                seed.dataset.val = num;
+                addDragEvents(seed);
+                seedsDiv.appendChild(seed);
+            });
+        }
+
+        function addDragEvents(el) {
+            let startX, startY, initialLeft, initialTop;
+            const start = (e) => {
+                if(el.classList.contains('placed')) return;
+                const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                const rect = el.getBoundingClientRect();
+                el.style.position = 'fixed';
+                el.style.left = rect.left + 'px';
+                el.style.top = rect.top + 'px';
+                startX = touch.clientX; startY = touch.clientY;
+                initialLeft = rect.left; initialTop = rect.top;
+                playPop();
+            };
+            const move = (e) => {
+                if (el.style.position !== 'fixed') return;
+                e.preventDefault();
+                const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                el.style.left = (initialLeft + touch.clientX - startX) + 'px';
+                el.style.top = (initialTop + touch.clientY - startY) + 'px';
+            };
+            const end = (e) => {
+                if (el.style.position !== 'fixed') return;
+                const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
+                el.style.display = 'none';
+                let target = document.elementFromPoint(touch.clientX, touch.clientY);
+                el.style.display = 'flex';
+
+                // 判斷是否碰到 pot (或 pot 的子元素)
+                let pot = target ? target.closest('.pot') : null;
+
+                if (pot && !pot.classList.contains('filled')) {
+                    // 這裡有兩個邏輯：
+                    // 1. 嚴格模式：必須放到「正確順序」的格子
+                    // 2. 寬鬆模式：只要是這個數字對應的格子 (因為我們有排序，所以第1格必須是最小的數)
+                    
+                    if (parseInt(pot.dataset.expect) === parseInt(el.dataset.val)) {
+                        // 放對了
+                        pot.appendChild(el);
+                        pot.classList.add('filled');
+                        el.classList.add('placed');
+                        el.style.position = 'absolute';
+                        el.style.left = '2.5px'; el.style.top = '5px';
+                        playCorrect();
+                        checkWin();
+                        return;
+                    } else {
+                        playWrong();
+                    }
+                }
+                // 復原
+                el.style.position = 'static';
+            };
+            el.addEventListener('mousedown', start);
+            el.addEventListener('touchstart', start, {passive: false});
+            document.addEventListener('mousemove', move);
+            document.addEventListener('touchmove', move, {passive: false});
+            el.addEventListener('mouseup', end);
+            el.addEventListener('touchend', end);
+        }
+
+        function checkWin() {
+            if(document.querySelectorAll('.pot.filled').length === 5) {
+                setTimeout(() => {
+                    document.getElementById('winModal').style.display = 'flex';
+                    playWin();
+                }, 500);
+            }
+        }
+
+        // 音效同上
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(f, t='sine') { if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.freq=f;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.1);o.stop(audioCtx.currentTime+0.1);}
+        function playPop() { playTone(500, 'triangle'); }
+        function playCorrect() { playTone(800); setTimeout(()=>playTone(1200), 100); }
+        function playWrong() { playTone(150, 'sawtooth'); }
+        function playWin() { [400,500,600,800].forEach((f,i)=>setTimeout(()=>playTone(f,'square'),i*100)); }
+    </script>
+</body>
+</html>
