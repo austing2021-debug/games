@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>皮克敏探索基地</title>
+    <style>
+        :root {
+            --pikmin-red: #ff4d4d;
+            --pikmin-blue: #4da6ff;
+            --pikmin-yellow: #ffd700;
+            --leaf-green: #76c442;
+            --soil-brown: #5d4037;
+            --bg-paper: #fdfcf0;
+        }
+        body {
+            margin: 0;
+            font-family: "Varela Round", "Nunito", sans-serif;
+            background-color: var(--bg-paper);
+            /* 方格紙背景效果 */
+            background-image: linear-gradient(#e0e0e0 1px, transparent 1px),
+                              linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--soil-brown);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            border: 3px solid var(--leaf-green);
+            box-shadow: 4px 4px 0 var(--soil-brown);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .game-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--soil-brown);
+            border: 3px solid transparent;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-card:active { transform: scale(0.98); }
+        
+        /* 裝飾用的葉子 */
+        .leaf-decor {
+            position: absolute;
+            top: -10px; right: -10px;
+            font-size: 4rem;
+            opacity: 0.1;
+            transform: rotate(45deg);
+        }
+
+        .icon { font-size: 4rem; margin-bottom: 15px; }
+        .title { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; }
+        .desc { font-size: 0.95rem; color: #777; }
+
+        /* 紅皮克敏風格 - 數學 */
+        .card-math { border-color: var(--pikmin-red); }
+        .card-math:hover { background: #fff0f0; }
+        .card-math .icon { text-shadow: 2px 2px 0 #ffcccc; }
+        
+        /* 藍皮克敏風格 - 記憶 */
+        .card-memory { border-color: var(--pikmin-blue); }
+        .card-memory:hover { background: #f0f8ff; }
+        .card-memory .icon { text-shadow: 2px 2px 0 #cce5ff; }
+
+    </style>
+</head>
+<body>
+
+    <h1>🌱 皮克敏探索基地</h1>
+
+    <div class="menu-grid">
+        <a href="math.html" class="game-card card-math">
+            <div class="leaf-decor">🍁</div>
+            <div class="icon">🔴</div> 
+            <div class="title">搬運算數</div>
+            <div class="desc">和紅皮克敏一起練習戰鬥(乘法)！</div>
+        </a>
+
+        <a href="memory.html" class="game-card card-memory">
+            <div class="leaf-decor">💧</div>
+            <div class="icon">🔵</div>
+            <div class="title">尋找夥伴</div>
+            <div class="desc">幫藍皮克敏找回走散的朋友！</div>
+        </a>
+    </div>
+
+</body>
+</html>

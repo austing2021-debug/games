@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>皮克敏尋找夥伴</title>
+    <style>
+        :root {
+            --bg-grass: #e8f5e9;
+            --soil-dark: #3e2723;
+            --card-back: #4caf50;
+        }
+        body {
+            margin: 0;
+            font-family: "Varela Round", sans-serif;
+            background-color: var(--bg-grass);
+            background-image: radial-gradient(#c8e6c9 20%, transparent 20%);
+            background-size: 30px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        header {
+            margin: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .home-btn {
+            text-decoration: none;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: var(--soil-dark);
+            box-shadow: 0 4px 0 #bbb;
+            border: 2px solid var(--soil-dark);
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 90%;
+            max-width: 400px;
+            aspect-ratio: 1;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            border: 2px solid var(--soil-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+            border-color: #ffd700;
+        }
+        .card-front, .card-back {
+            position: absolute;
+            backface-visibility: hidden;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+        }
+        .card-front { transform: rotateY(180deg); background: white; }
+        .card-back { 
+            background: var(--soil-dark);
+            color: var(--leaf-green);
+        }
+        .seedling { font-size: 2rem; color: #76c442; }
+
+        /* 勝利畫面 */
+        .win-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        .win-btn {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 6px 0 #cc0000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="home-btn">◀ 基地</a>
+        <h2 style="color:var(--soil-dark); margin:0;">尋找夥伴</h2>
+    </header>
+
+    <div class="game-board" id="board"></div>
+
+    <div class="win-modal" id="winModal">
+        <h1 style="font-size:3rem; margin:0;">🌸 繁花盛開!</h1>
+        <p style="font-size:1.5rem; color:#5d4037;">夥伴都找齊了！</p>
+        <button class="win-btn" onclick="initGame()">再次探索</button>
+    </div>
+
+    <script>
+        // 代表不同種類的皮克敏 (紅, 藍, 黃, 岩, 紫, 白, 冰, 羽)
+        const pikmins = ['🔴', '🔵', '🟡', '🪨', '🟣', '⚪', '🧊', '🦋'];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let isLocked = false;
+
+        function initGame() {
+            const board = document.getElementById('board');
+            const winModal = document.getElementById('winModal');
+            board.innerHTML = '';
+            winModal.style.display = 'none';
+            matchedPairs = 0;
+            flippedCards = [];
+            isLocked = false;
+
+            const gameItems = [...pikmins, ...pikmins];
+            gameItems.sort(() => Math.random() - 0.5);
+
+            gameItems.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.innerHTML = `
+                    <div class="card-back"><span class="seedling">🌱</span></div>
+                    <div class="card-front">${item}</div>
+                `;
+                card.addEventListener('click', () => flipCard(card, item));
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard(card, item) {
+            if (isLocked || card.classList.contains('flipped')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push({ card, item });
+            playPluckSound(); // 拔出皮克敏的聲音
+
+            if (flippedCards.length === 2) checkMatch();
+        }
+
+        function checkMatch() {
+            isLocked = true;
+            const [first, second] = flippedCards;
+
+            if (first.item === second.item) {
+                flippedCards = [];
+                isLocked = false;
+                matchedPairs++;
+                setTimeout(playHappySound, 200);
+
+                if (matchedPairs === pikmins.length) {
+                    setTimeout(() => {
+                        document.getElementById('winModal').style.display = 'flex';
+                        playWinMusic();
+                    }, 600);
+                }
+            } else {
+                setTimeout(() => {
+                    first.card.classList.remove('flipped');
+                    second.card.classList.remove('flipped');
+                    flippedCards = [];
+                    isLocked = false;
+                }, 800);
+            }
+        }
+
+        // --- 簡易音效 ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playPluckSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playHappySound() {
+            // 短促的快樂音
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+        
+        function playWinMusic() {
+            // 簡單的三和弦 Arpeggio
+            [523, 659, 784, 1046].forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.value = freq;
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.stop(audioCtx.currentTime + 0.4);
+                }, i * 150);
+            });
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
