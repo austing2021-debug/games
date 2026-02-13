@@ -5,44 +5,184 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>皮克敏探索樂園</title>
     <style>
-        :root { --pikmin-red: #ff4d4d; --leaf-green: #76c442; --bg-paper: #fdfcf0; --soil-brown: #5d4037;}
-        body { margin: 0; font-family: "Varela Round", sans-serif; background: var(--bg-paper); color: var(--soil-brown); padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { background: white; padding: 10px 20px; border-radius: 20px; border: 3px solid var(--leaf-green); box-shadow: 4px 4px 0 var(--soil-brown); margin-bottom: 20px;}
-        .category { width: 100%; max-width: 800px; margin-bottom: 20px; }
-        .cat-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; border-left: 5px solid var(--pikmin-red); padding-left: 10px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
-        .game-card { background: white; border-radius: 15px; padding: 15px; text-decoration: none; color: var(--soil-brown); box-shadow: 0 4px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; transition: transform 0.1s; border: 2px solid transparent;}
-        .game-card:active { transform: scale(0.95); }
-        .icon { font-size: 2.5rem; margin-bottom: 5px; }
-        .title { font-weight: 800; font-size: 1rem; }
-        /* 配色 */
-        .c-math { border-color: #ff4d4d; }
-        .c-logic { border-color: #4da6ff; }
-        .c-lang { border-color: #ffd700; }
+        :root {
+            /* 定義灰色系與白光 */
+            --frame-grey: #607d8b;  /* 邊框灰 */
+            --glow-white: rgba(255, 255, 255, 0.8); /* 白光 */
+            --text-dark: #37474f;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Varela Round", "Nunito", sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+
+            /* --- 背景設定 --- */
+            /* 使用你指定的 Dcard 圖片 */
+            background-image: url('https://megapx-assets.dcard.tw/images/8a7ebad1-54da-4a36-8511-17a583e8ddf9/1280.webp');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* 讓背景固定不動 */
+        }
+
+        /* 加一層半透明遮罩，讓白光效果更明顯，也確保文字好讀 */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.2); /* 微微變暗 */
+            z-index: -1;
+        }
+
+        h1 {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 50px;
+            border: 4px solid var(--frame-grey);
+            /* 標題也有白光暈 */
+            box-shadow: 0 0 20px var(--glow-white);
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: var(--text-dark);
+            text-align: center;
+        }
+
+        /* 統一的大網格，不分類 */
+        .menu-grid {
+            display: grid;
+            /* RWD 設定：手機一行2個，平板3個，電腦4個 */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* --- 按鈕樣式設計 --- */
+        .game-card {
+            background: rgba(255, 255, 255, 0.9); /* 微透明白底 */
+            border-radius: 20px;
+            padding: 20px 10px;
+            text-decoration: none;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            
+            /* 灰色外框 */
+            border: 3px solid var(--frame-grey);
+            
+            /* 初始狀態：微微的浮起陰影 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 懸浮效果 (Hover) */
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02); /* 往上浮起 */
+            background: white;
+            border-color: white; /* 邊框變白 */
+            
+            /* 關鍵：框後白光爆發 */
+            box-shadow: 0 0 25px var(--glow-white), 
+                        0 0 10px var(--glow-white) inset;
+            z-index: 10;
+        }
+
+        .game-card:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 5px var(--glow-white);
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            /* 給 Emoji 一點陰影，讓它更立體 */
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
+            transition: transform 0.3s;
+        }
+        
+        .game-card:hover .icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .title {
+            font-weight: 900;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .desc {
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+
     <h1>🌱 皮克敏探索樂園</h1>
 
-    <div class="category">
-        <div class="cat-title">數學與邏輯 (4-5歲推薦)</div>
-        <div class="menu-grid">
-            <a href="add_sub.html" class="game-card c-math"><div class="icon">🍎</div><div class="title">數數加減法</div></a>
-            <a href="zhuyin.html" class="game-card c-lang"><div class="icon">ㄅ</div><div class="title">注音符號</div></a>
-            <a href="abc.html" class="game-card c-lang"><div class="icon">🅰️</div><div class="title">英文 ABC</div></a>
-            <a href="maze.html" class="game-card c-logic"><div class="icon">👆</div><div class="title">手指迷宮</div></a>
-        </div>
+    <div class="menu-grid">
+        <a href="zhuyin.html" class="game-card">
+            <div class="icon">ㄅ</div>
+            <div class="title">注音符號</div>
+            <div class="desc">聽聽怎麼唸</div>
+        </a>
+        
+        <a href="abc.html" class="game-card">
+            <div class="icon">🅰️</div>
+            <div class="title">英文 ABC</div>
+            <div class="desc">認識字母</div>
+        </a>
+
+        <a href="add_sub.html" class="game-card">
+            <div class="icon">🍎</div>
+            <div class="title">數數加減法</div>
+            <div class="desc">數蘋果學運算</div>
+        </a>
+
+        <a href="maze.html" class="game-card">
+            <div class="icon">👆</div>
+            <div class="title">手指迷宮</div>
+            <div class="desc">畫出你的路線</div>
+        </a>
+
+        <a href="memory.html" class="game-card">
+            <div class="icon">🔵</div>
+            <div class="title">記憶翻翻樂</div>
+            <div class="desc">找出一樣的夥伴</div>
+        </a>
+
+        <a href="math.html" class="game-card">
+            <div class="icon">✖️</div>
+            <div class="title">乘法除法</div>
+            <div class="desc">隊長挑戰賽</div>
+        </a>
+
+        <a href="compare.html" class="game-card">
+            <div class="icon">⚖️</div>
+            <div class="title">比大小排列</div>
+            <div class="desc">誰最大？誰最小？</div>
+        </a>
+
+        <a href="sort.html" class="game-card">
+            <div class="icon">🔢</div>
+            <div class="title">排序整理</div>
+            <div class="desc">從小排到大</div>
+        </a>
+
+        <a href="fill.html" class="game-card">
+            <div class="icon">📝</div>
+            <div class="title">數字填空</div>
+            <div class="desc">補上遺失的數字</div>
+        </a>
     </div>
 
-    <div class="category">
-        <div class="cat-title">運算與挑戰 (進階)</div>
-        <div class="menu-grid">
-            <a href="math.html" class="game-card c-math"><div class="icon">✖️</div><div class="title">乘法除法</div></a>
-            <a href="fill.html" class="game-card c-math"><div class="icon">📝</div><div class="title">數字填空</div></a>
-            <a href="sort.html" class="game-card c-math"><div class="icon">🔢</div><div class="title">排序整理</div></a>
-            <a href="compare.html" class="game-card c-math"><div class="icon">⚖️</div><div class="title">比大小排列</div></a>
-            <a href="memory.html" class="game-card c-logic"><div class="icon">🔵</div><div class="title">記憶翻翻樂</div></a>
-        </div>
-    </div>
 </body>
 </html>
